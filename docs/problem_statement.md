@@ -38,3 +38,7 @@ A recommendation memo (Executive Summary) answering: **Should PulseCRM invest
 further in Smart Task Automation, and which segments should Growth prioritize
 in onboarding?** — backed by SQL analysis, statistical testing, and a Power BI
 dashboard stakeholders can self-serve from.
+
+## Findings Log (updated as analysis progresses)
+- **Adoption Rate:** 55.6% of users in the treatment group (550 of 990) used
+  Smart Task Automation at least once.
