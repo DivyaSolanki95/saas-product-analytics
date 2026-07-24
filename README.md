@@ -18,7 +18,6 @@ different, more trustworthy story. **Recommendation: invest further.**
 ## Dashboard
 
 ![Dashboard Screenshot](screenshots/dashboard_overview.png)
-*(Screenshot to be added — see screenshots/ folder)*
 
 ## The Business Problem
 
