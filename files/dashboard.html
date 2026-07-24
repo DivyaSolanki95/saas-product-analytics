@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Analytics Dashboard — E-Commerce App</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0F172A; --blue: #2563EB; --blue-light: #93C5FD;
+    --gray: #64748B; --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
+    --green: #10B981; --amber: #F59E0B; --red: #EF4444; --purple: #8B5CF6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--navy);
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy), #1E3A8A); color: white;
+    padding: 32px 40px;
+  }
+  header h1 { margin: 0 0 6px 0; font-size: 26px; }
+  header p { margin: 0; color: #CBD5E1; font-size: 14px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .kpi .label { font-size: 12px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .kpi .value { font-size: 26px; font-weight: 700; color: var(--navy); }
+  .kpi .sub { font-size: 12px; color: var(--gray); margin-top: 4px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 18px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--gray);
+    border-bottom: 2px solid transparent; user-select: none;
+  }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .card h3 { margin: 0 0 4px 0; font-size: 15px; }
+  .card .desc { font-size: 12.5px; color: var(--gray); margin-bottom: 14px; }
+  .insight {
+    background: #EFF6FF; border-left: 3px solid var(--blue); border-radius: 6px;
+    padding: 12px 16px; font-size: 13.5px; color: #1E3A8A; margin-top: 14px; line-height: 1.5;
+  }
+  canvas { max-height: 340px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--gray); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: white;
+    font-size: 12.5px; cursor: pointer; color: var(--gray);
+  }
+  .chip.active { background: var(--blue); color: white; border-color: var(--blue); }
+  footer { text-align: center; padding: 20px; color: var(--gray); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 E-Commerce Product Analytics Dashboard</h1>
+  <p>Funnel · Retention · Revenue — 6,000 users, 90-day window</p>
+</header>
+
+<div class="container">
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="funnel">Funnel</div>
+    <div class="tab" data-tab="retention">Retention</div>
+    <div class="tab" data-tab="revenue">Revenue</div>
+  </div>
+
+  <div class="panel active" id="panel-funnel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Overall Funnel</h3>
+        <div class="desc">Signup → Product View → Add to Cart → Purchase</div>
+        <canvas id="funnelChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Conversion by Channel</h3>
+        <div class="desc">Signup-to-purchase % — click a bar to inspect</div>
+        <canvas id="channelChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Funnel by Device</h3>
+      <div class="desc">iOS vs Android conversion comparison</div>
+      <canvas id="deviceChart" style="max-height:220px;"></canvas>
+      <div class="insight">💡 iOS converts at 27.9% vs Android's 17.0% — an ~11 point gap worth a targeted UX audit of the Android checkout flow.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-retention">
+    <div class="card">
+      <h3>Weekly Retention by Channel</h3>
+      <div class="desc">% of users who returned in each week after signup — click channels to toggle</div>
+      <div class="filter-row" id="channelToggles"></div>
+      <canvas id="retentionChart"></canvas>
+      <div class="insight">💡 Referral holds the highest retention at <em>both</em> week 1 (32.6%) and week 4 (15.7%) — the same channel that converts best also keeps users longest. Paid Social is weakest on both ends.</div>
+    </div>
+    <div class="card">
+      <h3>Cohort Retention Table</h3>
+      <div class="desc">Weekly signup cohorts (complete 4-week windows only)</div>
+      <table id="cohortTable"></table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-revenue">
+    <div class="grid2">
+      <div class="card">
+        <h3>Revenue by Channel</h3>
+        <canvas id="revenueChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Revenue by Category</h3>
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Average Order Value by Channel</h3>
+      <div class="desc">AOV is fairly flat across channels — revenue differences come from volume, not basket size</div>
+      <table id="revenueTable"></table>
+    </div>
+  </div>
+
+</div>
+
+<footer>Product Analytics Case Study — SQL + Python analysis · Built as a portfolio project</footer>
+
+<script>
+const DATA = {"overall": {"total_signups": 6000, "viewed_product": 4873, "added_to_cart": 2383, "purchased": 1389, "signup_to_view_pct": 81.2, "view_to_cart_pct": 48.9, "cart_to_purchase_pct": 58.3, "overall_conversion_pct": 23.1}, "channel": [{"channel": "Referral", "signups": 479, "viewed": 465, "carted": 338, "purchased": 227, "signup_to_purchase_pct": 47.4}, {"channel": "Email", "signups": 587, "viewed": 548, "carted": 305, "purchased": 192, "signup_to_purchase_pct": 32.7}, {"channel": "Organic", "signups": 1701, "viewed": 1530, "carted": 813, "purchased": 445, "signup_to_purchase_pct": 26.2}, {"channel": "Paid Search", "signups": 1289, "viewed": 1145, "carted": 546, "purchased": 312, "signup_to_purchase_pct": 24.2}, {"channel": "Paid Social", "signups": 1944, "viewed": 1185, "carted": 381, "purchased": 213, "signup_to_purchase_pct": 11.0}], "device": [{"device": "iOS", "signups": 3389, "purchased": 946, "conversion_pct": 27.9}, {"device": "Android", "signups": 2611, "purchased": 443, "conversion_pct": 17.0}], "cohort": [{"cohort_week": "2025-12-29", "cohort_size": 156, "week1_retention_pct": 12.8, "week2_retention_pct": 35.9, "week3_retention_pct": 27.6, "week4_retention_pct": 19.9}, {"cohort_week": "2026-01-05", "cohort_size": 299, "week1_retention_pct": 14.4, "week2_retention_pct": 37.8, "week3_retention_pct": 22.7, "week4_retention_pct": 17.7}, {"cohort_week": "2026-01-12", "cohort_size": 314, "week1_retention_pct": 11.1, "week2_retention_pct": 39.5, "week3_retention_pct": 31.8, "week4_retention_pct": 14.6}, {"cohort_week": "2026-01-19", "cohort_size": 345, "week1_retention_pct": 14.5, "week2_retention_pct": 39.1, "week3_retention_pct": 25.5, "week4_retention_pct": 13.3}, {"cohort_week": "2026-01-26", "cohort_size": 376, "week1_retention_pct": 13.0, "week2_retention_pct": 43.1, "week3_retention_pct": 21.5, "week4_retention_pct": 18.1}, {"cohort_week": "2026-02-02", "cohort_size": 430, "week1_retention_pct": 13.0, "week2_retention_pct": 34.7, "week3_retention_pct": 27.2, "week4_retention_pct": 15.6}, {"cohort_week": "2026-02-09", "cohort_size": 445, "week1_retention_pct": 7.6, "week2_retention_pct": 35.7, "week3_retention_pct": 24.3, "week4_retention_pct": 13.7}, {"cohort_week": "2026-02-16", "cohort_size": 469, "week1_retention_pct": 14.5, "week2_retention_pct": 38.6, "week3_retention_pct": 22.8, "week4_retention_pct": 14.5}, {"cohort_week": "2026-02-23", "cohort_size": 509, "week1_retention_pct": 11.8, "week2_retention_pct": 38.1, "week3_retention_pct": 24.8, "week4_retention_pct": 17.3}, {"cohort_week": "2026-03-02", "cohort_size": 547, "week1_retention_pct": 12.4, "week2_retention_pct": 38.4, "week3_retention_pct": 23.6, "week4_retention_pct": 17.9}], "chretention": [{"channel": "Referral", "signups": 479, "week1_pct": 32.6, "week4_pct": 15.7}, {"channel": "Email", "signups": 587, "week1_pct": 20.3, "week4_pct": 13.3}, {"channel": "Paid Search", "signups": 1289, "week1_pct": 12.9, "week4_pct": 11.2}, {"channel": "Organic", "signups": 1701, "week1_pct": 14.9, "week4_pct": 10.5}, {"channel": "Paid Social", "signups": 1944, "week1_pct": 4.1, "week4_pct": 8.0}], "revenue": [{"channel": "Organic", "num_orders": 495, "total_revenue": 1027290.0, "avg_order_value": 2075.0}, {"channel": "Paid Search", "num_orders": 340, "total_revenue": 728229.0, "avg_order_value": 2142.0}, {"channel": "Referral", "num_orders": 277, "total_revenue": 584171.0, "avg_order_value": 2109.0}, {"channel": "Email", "num_orders": 227, "total_revenue": 465637.0, "avg_order_value": 2051.0}, {"channel": "Paid Social", "num_orders": 219, "total_revenue": 462830.0, "avg_order_value": 2113.0}], "category": [{"product_category": "Electronics", "num_orders": 324, "total_revenue": 1522438.0}, {"product_category": "Home & Kitchen", "num_orders": 302, "total_revenue": 577060.0}, {"product_category": "Sports", "num_orders": 293, "total_revenue": 459373.0}, {"product_category": "Fashion", "num_orders": 326, "total_revenue": 413015.0}, {"product_category": "Beauty", "num_orders": 313, "total_revenue": 296271.0}]};
+
+const COLORS = { blue: '#2563EB', amber: '#F59E0B', green: '#10B981', red: '#EF4444', purple: '#8B5CF6', gray: '#94A3B8' };
+const PALETTE = [COLORS.blue, COLORS.amber, COLORS.green, COLORS.red, COLORS.purple];
+
+// ---- KPI Row ----
+const kpiRow = document.getElementById('kpiRow');
+const kpis = [
+  { label: 'Total Signups', value: DATA.overall.total_signups.toLocaleString(), sub: '90-day window' },
+  { label: 'Overall Conversion', value: DATA.overall.overall_conversion_pct + '%', sub: 'signup → purchase' },
+  { label: 'Best Channel', value: 'Referral', sub: '47.4% conversion' },
+  { label: 'Total Revenue', value: '₹' + (DATA.revenue.reduce((a,b)=>a+b.total_revenue,0)/100000).toFixed(1) + 'L', sub: 'across all channels' },
+];
+kpiRow.innerHTML = kpis.map(k => `<div class="kpi"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ---- Funnel Chart ----
+new Chart(document.getElementById('funnelChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Signup', 'Product View', 'Add to Cart', 'Purchase'],
+    datasets: [{
+      data: [DATA.overall.total_signups, DATA.overall.viewed_product, DATA.overall.added_to_cart, DATA.overall.purchased],
+      backgroundColor: COLORS.blue, borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y', plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true } }
+  }
+});
+
+// ---- Channel Conversion Chart ----
+const chSorted = [...DATA.channel].sort((a,b) => a.signup_to_purchase_pct - b.signup_to_purchase_pct);
+new Chart(document.getElementById('channelChart'), {
+  type: 'bar',
+  data: {
+    labels: chSorted.map(c => c.channel),
+    datasets: [{
+      label: 'Conversion %',
+      data: chSorted.map(c => c.signup_to_purchase_pct),
+      backgroundColor: chSorted.map(c => c.channel === 'Referral' ? COLORS.green : c.channel === 'Paid Social' ? COLORS.red : COLORS.blue),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y', plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `${ctx.parsed.x}% conversion (${chSorted[ctx.dataIndex].signups} signups)` } } },
+    scales: { x: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+  }
+});
+
+// ---- Device Chart ----
+new Chart(document.getElementById('deviceChart'), {
+  type: 'bar',
+  data: {
+    labels: DATA.device.map(d => d.device),
+    datasets: [{ data: DATA.device.map(d => d.conversion_pct), backgroundColor: [COLORS.blue, COLORS.gray], borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+  }
+});
+
+// ---- Retention Chart (toggleable channels) ----
+const retentionCanvas = document.getElementById('retentionChart');
+let retentionChart;
+const activeChannels = new Set(DATA.chretention.map(c => c.channel));
+
+function renderRetentionChart() {
+  const datasets = DATA.chretention
+    .filter(c => activeChannels.has(c.channel))
+    .map((c, i) => ({
+      label: c.channel,
+      data: [c.week1_pct, null, null, c.week4_pct],
+      borderColor: PALETTE[DATA.chretention.findIndex(x => x.channel === c.channel) % PALETTE.length],
+      backgroundColor: 'transparent',
+      tension: 0.3, borderWidth: 2, spanGaps: true,
+    }));
+  if (retentionChart) retentionChart.destroy();
+  retentionChart = new Chart(retentionCanvas, {
+    type: 'line',
+    data: { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], datasets },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } }
+  });
+}
+
+const togglesDiv = document.getElementById('channelToggles');
+togglesDiv.innerHTML = DATA.chretention.map(c => `<div class="chip active" data-ch="${c.channel}">${c.channel}</div>`).join('');
+togglesDiv.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const ch = chip.dataset.ch;
+    if (activeChannels.has(ch)) { activeChannels.delete(ch); chip.classList.remove('active'); }
+    else { activeChannels.add(ch); chip.classList.add('active'); }
+    renderRetentionChart();
+  });
+});
+renderRetentionChart();
+
+// ---- Cohort Table ----
+const cohortTable = document.getElementById('cohortTable');
+cohortTable.innerHTML = `<tr><th>Cohort Week</th><th>Size</th><th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th></tr>` +
+  DATA.cohort.map(c => `<tr><td>${c.cohort_week}</td><td>${c.cohort_size}</td><td>${c.week1_retention_pct}%</td><td>${c.week2_retention_pct}%</td><td>${c.week3_retention_pct}%</td><td>${c.week4_retention_pct}%</td></tr>`).join('');
+
+// ---- Revenue Charts ----
+const revSorted = [...DATA.revenue].sort((a,b) => a.total_revenue - b.total_revenue);
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels: revSorted.map(r => r.channel),
+    datasets: [{ data: revSorted.map(r => r.total_revenue), backgroundColor: COLORS.green, borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.x.toLocaleString() } } },
+    scales: { x: { beginAtZero: true, ticks: { callback: v => '₹' + (v/1000) + 'K' } } }
+  }
+});
+
+const catSorted = [...DATA.category].sort((a,b) => a.total_revenue - b.total_revenue);
+new Chart(document.getElementById('categoryChart'), {
+  type: 'bar',
+  data: {
+    labels: catSorted.map(c => c.product_category),
+    datasets: [{ data: catSorted.map(c => c.total_revenue), backgroundColor: COLORS.purple, borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.x.toLocaleString() } } },
+    scales: { x: { beginAtZero: true, ticks: { callback: v => '₹' + (v/1000) + 'K' } } }
+  }
+});
+
+// ---- Revenue Table ----
+const revenueTable = document.getElementById('revenueTable');
+revenueTable.innerHTML = `<tr><th>Channel</th><th>Orders</th><th>Total Revenue</th><th>Avg Order Value</th></tr>` +
+  [...DATA.revenue].sort((a,b) => b.total_revenue - a.total_revenue).map(r =>
+    `<tr><td>${r.channel}</td><td>${r.num_orders}</td><td>₹${r.total_revenue.toLocaleString()}</td><td>₹${r.avg_order_value.toLocaleString()}</td></tr>`).join('');
+</script>
+</body>
+</html>

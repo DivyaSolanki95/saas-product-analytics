@@ -1,0 +1,57 @@
+{
+  "name": "PulseCRM Analytics",
+  "dataColors": [
+    "#1F2A44",
+    "#2EC4B6",
+    "#FF9F1C",
+    "#E76F51",
+    "#457B9D",
+    "#6B9080",
+    "#8D99AE",
+    "#9E2A2B"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#1F2A44",
+  "tableAccent": "#2EC4B6",
+  "good": "#2EC4B6",
+  "neutral": "#FF9F1C",
+  "bad": "#9E2A2B",
+  "maximum": "#1F2A44",
+  "center": "#8D99AE",
+  "minimum": "#E1F5EE",
+  "null": "#D3D1C7",
+  "textClasses": {
+    "callout": {
+      "fontSize": 32,
+      "color": "#1F2A44"
+    },
+    "title": {
+      "fontSize": 14,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1F2A44"
+    },
+    "header": {
+      "fontSize": 12,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1F2A44"
+    },
+    "label": {
+      "fontSize": 10,
+      "color": "#5F5E5A"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border": [{ "show": false }]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [{ "color": "#1F2A44", "fontSize": 32 }],
+        "categoryLabels": [{ "color": "#5F5E5A", "fontSize": 12 }]
+      }
+    }
+  }
+}
